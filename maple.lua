@@ -318,7 +318,6 @@ local mouseWasDown = false
 local chanceRoll = 100
 local lastTrigger = 0
 local lastRageFire = 0
-local espElapsed = 0
 local envElapsed = 0
 local warnedDrawing = false
 local fovApplied = false
@@ -443,8 +442,15 @@ local function newDrawing(class)
     return ok and object or nil
 end
 
+local espObjects = { "box", "name", "distance", "health", "tracer" }
+
 local function hideEntry(entry)
-    for _, object in pairs(entry) do
+    local s = entry.state
+    if s.hidden then return end
+    for key in pairs(s) do s[key] = nil end
+    s.hidden = true
+    for _, key in ipairs(espObjects) do
+        local object = entry[key]
         if object then object.Visible = false end
     end
 end
@@ -459,6 +465,7 @@ local function espEntry(plr)
         distance = newDrawing("Text"),
         health = newDrawing("Text"),
         tracer = newDrawing("Line"),
+        state = {},
     }
     for _, text in ipairs({entry.name, entry.distance, entry.health}) do
         if text then
@@ -480,9 +487,40 @@ local function espEntry(plr)
     return entry
 end
 
+local espActive = false
+
+local function drawBox(entry, color, left, top, width, height, visible)
+    local s = entry.state
+    local box = entry.box
+    if not box then return end
+    if s.boxVisible ~= visible then box.Visible = visible; s.boxVisible = visible end
+    if s.boxColor ~= color then box.Color = color; s.boxColor = color end
+    if s.boxLeft ~= left or s.boxTop ~= top or s.boxWidth ~= width or s.boxHeight ~= height then
+        box.Position = Vector2.new(left, top)
+        box.Size = Vector2.new(width, height)
+        s.boxLeft, s.boxTop, s.boxWidth, s.boxHeight = left, top, width, height
+    end
+end
+
+local function drawText(entry, object, key, color, x, y, text, visible)
+    local s = entry.state
+    if not object then return end
+    local vk, ck, xk, yk, tk = key .. "Visible", key .. "Color", key .. "X", key .. "Y", key .. "Text"
+    if s[vk] ~= visible then object.Visible = visible; s[vk] = visible end
+    if s[ck] ~= color then object.Color = color; s[ck] = color end
+    if s[xk] ~= x or s[yk] ~= y then
+        object.Position = Vector2.new(x, y)
+        s[xk], s[yk] = x, y
+    end
+    if s[tk] ~= text then object.Text = text; s[tk] = text end
+end
+
 local function updateEsp()
     if not library.flags["ESP Enabled"] then
-        for _, entry in pairs(drawings) do hideEntry(entry) end
+        if espActive then
+            espActive = false
+            for _, entry in pairs(drawings) do hideEntry(entry) end
+        end
         return
     end
     if not drawingApi then
@@ -493,14 +531,19 @@ local function updateEsp()
         return
     end
 
+    espActive = true
     local accent = library.flags["ESP Color"] or Color3.new(1, 1, 1)
     local tracerColor = library.flags["Tracer Color"] or Color3.new(1, 1, 1)
     local maxDistance = library.flags["ESP Max Distance"] or 2000
     local origin = camera.CFrame.Position
     local viewport = camera.ViewportSize
+    local boxesOn = library.flags["ESP Boxes"] == true
+    local namesOn = library.flags["ESP Names"] == true
+    local distanceOn = library.flags["ESP Distance"] == true
+    local healthOn = library.flags["ESP Health"] == true
+    local tracersOn = library.flags["ESP Tracers"] == true
 
     for _, plr in ipairs(Players:GetPlayers()) do
-        local entry = espEntry(plr)
         local shown = false
 
         if plr ~= player then
@@ -511,11 +554,15 @@ local function updateEsp()
             if head and root and teamAllowed(plr, library.flags["ESP Team Check"]) then
                 local distance = (root.Position - origin).Magnitude
                 if distance <= maxDistance then
-                    local headPoint, headVisible = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-                    local footPoint, footVisible = camera:WorldToViewportPoint(root.Position - Vector3.new(0, 2.8, 0))
+                    -- screen space, not viewport space: Drawing sits on the window, so a viewport
+                    -- box would trail the character by the topbar inset
+                    local headPoint = camera:WorldToScreenPoint(head.Position + Vector3.new(0, 0.6, 0))
+                    local footPoint = camera:WorldToScreenPoint(root.Position - Vector3.new(0, 2.9, 0))
 
-                    if headVisible and footVisible and headPoint.Z > 0 then
+                    if headPoint.Z > 0 and footPoint.Z > 0 then
                         shown = true
+                        local entry = espEntry(plr)
+                        entry.state.hidden = false
                         local top = math.min(headPoint.Y, footPoint.Y)
                         local height = math.abs(footPoint.Y - headPoint.Y)
                         local width = math.max(height * 0.55, 8)
@@ -527,49 +574,38 @@ local function updateEsp()
                             color = plr.Team.TeamColor.Color
                         end
 
-                        if entry.box then
-                            entry.box.Visible = library.flags["ESP Boxes"] == true
-                            entry.box.Color = color
-                            entry.box.Position = Vector2.new(centerX - width / 2, top)
-                            entry.box.Size = Vector2.new(width, height)
-                        end
-                        if entry.name then
-                            entry.name.Visible = library.flags["ESP Names"] == true
-                            entry.name.Color = color
-                            entry.name.Position = Vector2.new(centerX, top - 16)
-                            entry.name.Text = plr.Name
-                        end
-                        if entry.distance then
-                            entry.distance.Visible = library.flags["ESP Distance"] == true
-                            entry.distance.Color = color
-                            entry.distance.Position = Vector2.new(centerX, bottom + 1)
-                            entry.distance.Text = ("%dm"):format(distance)
-                        end
-                        if entry.health then
-                            entry.health.Visible = library.flags["ESP Health"] == true
-                            entry.health.Color = color
-                            entry.health.Position = Vector2.new(centerX, bottom + 16)
-                            entry.health.Text = ("%d hp"):format(humanoid.Health)
-                        end
+                        drawBox(entry, color, centerX - width / 2, top, width, height, boxesOn)
+                        drawText(entry, entry.name, "name", color, centerX, top - 16, plr.Name, namesOn)
+                        drawText(entry, entry.distance, "distance", color, centerX, bottom + 1, ("%dm"):format(distance), distanceOn)
+                        drawText(entry, entry.health, "health", color, centerX, bottom + 16, ("%d hp"):format(humanoid.Health), healthOn)
+
                         if entry.tracer then
-                            entry.tracer.Visible = library.flags["ESP Tracers"] == true
-                            entry.tracer.Color = tracerColor
-                            entry.tracer.From = Vector2.new(viewport.X / 2, viewport.Y)
-                            entry.tracer.To = Vector2.new(centerX, bottom)
+                            local s = entry.state
+                            if s.tracerVisible ~= tracersOn then entry.tracer.Visible = tracersOn; s.tracerVisible = tracersOn end
+                            if s.tracerColor ~= tracerColor then entry.tracer.Color = tracerColor; s.tracerColor = tracerColor end
+                            if s.tracerFromX ~= viewport.X / 2 or s.tracerFromY ~= viewport.Y or s.tracerToX ~= centerX or s.tracerToY ~= bottom then
+                                entry.tracer.From = Vector2.new(viewport.X / 2, viewport.Y)
+                                entry.tracer.To = Vector2.new(centerX, bottom)
+                                s.tracerFromX, s.tracerFromY, s.tracerToX, s.tracerToY = viewport.X / 2, viewport.Y, centerX, bottom
+                            end
                         end
                     end
                 end
             end
         end
 
-        if not shown then hideEntry(entry) end
+        if not shown then
+            local entry = drawings[plr]
+            if entry then hideEntry(entry) end
+        end
     end
 end
 
 Players.PlayerRemoving:Connect(function(plr)
     local entry = drawings[plr]
     if entry then
-        for _, object in pairs(entry) do
+        for _, key in ipairs(espObjects) do
+            local object = entry[key]
             if object then pcall(function() object:Remove() end) end
         end
         drawings[plr] = nil
@@ -726,11 +762,7 @@ local function onRender(delta)
         circle.Visible = library.flags["Rage FOV Draw"] == true
     end
 
-    espElapsed = espElapsed + delta
-    if espElapsed >= 0.1 then
-        espElapsed = 0
-        updateEsp()
-    end
+    updateEsp() -- every frame, so boxes stay welded to the character instead of trailing
 end
 
 -- Camera priority + 1 means this runs after Roblox has moved the camera for the frame, so an aim
@@ -764,7 +796,8 @@ function library:Unload()
     pcall(function() RunService:UnbindFromRenderStep("maple") end)
     silentTarget = nil
     for _, entry in pairs(drawings) do
-        for _, object in pairs(entry) do
+        for _, key in ipairs(espObjects) do
+            local object = entry[key]
             if object then pcall(function() object:Remove() end) end
         end
     end
