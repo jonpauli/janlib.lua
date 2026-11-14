@@ -1,33 +1,18 @@
--- Maple - Jans Library menu
--- fetches the library, then declares Combat / Visuals / Rage / Misc / Settings and inits.
--- tabs and toggles live here; the library source is never pasted into this file.
---
--- run:
---   loadstring(game:HttpGet("https://raw.githubusercontent.com/jonpauli/janlib.lua/main/maple.lua"))()
--- or paste the whole file into the executor and execute.
+-- Maple - paste this whole file into the executor and hit Execute.
 
 -- [library] ---------------------------------------------------------------------------------------------------
 if getgenv().library then pcall(function() getgenv().library:Unload() end) end
 
-local LIB_URLS = {
-    "https://raw.githubusercontent.com/jonpauli/janlib.lua/main/janlib.lua",
-    "https://files.catbox.moe/tlzk1o.lua",
-}
+local src = game:HttpGet("https://raw.githubusercontent.com/jonpauli/janlib.lua/main/janlib.lua")
+print("[maple] fetched " .. #src .. " bytes")
 
-local librarySource
-for _, url in ipairs(LIB_URLS) do
-    local ok, body = pcall(function() return game:HttpGet(url) end)
-    -- anything under 50 KB is the old truncated object or a stale CDN cache hit
-    if ok and type(body) == "string" and #body > 50000 then
-        librarySource = body
-        break
-    end
+-- raw github can serve a stale body. the library is 100 KB, anything under 50 KB is not it.
+if #src < 50000 then
+    src = game:HttpGet("https://files.catbox.moe/tlzk1o.lua")
+    print("[maple] github stale, mirror " .. #src .. " bytes")
 end
-assert(librarySource, "[maple] could not fetch Jans Library from github or the mirror")
 
-local libraryChunk, libraryError = loadstring(librarySource)
-assert(libraryChunk, "[maple] library syntax error: " .. tostring(libraryError))
-libraryChunk()
+assert(loadstring(src))()
 
 local library = getgenv().library
 assert(library, "[maple] library loaded but getgenv().library is nil")
@@ -51,7 +36,7 @@ local CombatCol2 = CombatTab:AddColumn()
 local Aim = CombatCol1:AddSection("Aim Assist")
 Aim:AddDivider("Main");
 Aim:AddToggle{text = "Enabled", flag = "Aimbot Enabled"}:AddBind({flag = "Aimbot Bind", key = "E", mode = "hold"});
-Aim:AddSlider{text = "FOV", flag = "Aimbot FOV", min = 0, max = 360, value = 120, suffix = "├é┬░"}
+Aim:AddSlider{text = "FOV", flag = "Aimbot FOV", min = 0, max = 360, value = 120, suffix = " deg"}
 Aim:AddSlider{text = "Smoothing", flag = "Aimbot Smoothing", min = 1, max = 30, value = 8}
 Aim:AddSlider{text = "Prediction", flag = "Aimbot Prediction", min = 0, max = 2, float = 0.01, value = 0}
 Aim:AddList{text = "Hitbox", flag = "Aimbot Hitbox", value = "Head", values = {"Head", "Torso", "HumanoidRootPart"}};
@@ -70,7 +55,7 @@ Silent:AddToggle{text = "Wall Check", flag = "Silent Aim Wall Check"}
 local Trigger = CombatCol2:AddSection("Trigger Bot")
 Trigger:AddDivider("Main");
 Trigger:AddToggle{text = "Enabled", flag = "Trigger Enabled"}:AddBind({flag = "Trigger Bind", key = "Q", mode = "hold"});
-Trigger:AddSlider{text = "Delay", flag = "Trigger Delay", min = 0, max = 500, value = 0, suffix = "ms"}
+Trigger:AddSlider{text = "Delay", flag = "Trigger Delay", min = 0, max = 500, value = 0, suffix = " ms"}
 Trigger:AddSlider{text = "FOV", flag = "Trigger FOV", min = 0, max = 100, value = 20}
 Trigger:AddDivider("Checks");
 Trigger:AddToggle{text = "Team Check", flag = "Trigger Team Check"}
@@ -128,7 +113,7 @@ local RageCol = RageTab:AddColumn()
 local RageAim = RageCol:AddSection("Aim")
 RageAim:AddDivider("Main");
 RageAim:AddToggle{text = "Enabled", flag = "Rage Aim Enabled"}:AddBind({flag = "Rage Aim Bind", key = "R", mode = "hold"});
-RageAim:AddSlider{text = "FOV", flag = "Rage Aim FOV", min = 0, max = 360, value = 180, suffix = "├é┬░"}
+RageAim:AddSlider{text = "FOV", flag = "Rage Aim FOV", min = 0, max = 360, value = 180, suffix = " deg"}
 RageAim:AddSlider{text = "Smoothing", flag = "Rage Aim Smoothing", min = 0, max = 10, float = 0.1, value = 0}
 RageAim:AddList{text = "Priority", flag = "Rage Aim Priority", value = "Distance", values = {"Distance", "Health", "FOV"}};
 RageAim:AddDivider("Behaviour");
