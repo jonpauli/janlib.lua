@@ -205,19 +205,35 @@ local backgrounds = {
     Hearts = "rbxassetid://6073763717",
 }
 
+-- library.main only exists after library:Init(), so every callback below writes through
+-- this one function and it gets called again once the menu actually exists.
+-- tint comes from the color option's flag, opacity from its transparency bar, and the
+-- UI Transparency slider fades the image and the solid colour under it together.
+local function applyBackground()
+    if not library.main then return end
+    local main = library.main
+    local opacity = 1 - (library.flags["UI Background Color Transparency"] or 0)
+    local fade = library.flags["UI Transparency"] or 0
+    local tile = library.flags["UI Tile Size"] or 50
+    main.Image = backgrounds[library.flags["UI Background"] or "Floral"]
+    main.ImageColor3 = library.flags["UI Background Color"] or Color3.new(1, 1, 1)
+    main.ImageTransparency = math.clamp(1 - opacity + fade, 0, 1)
+    main.TileSize = UDim2.new(0, tile, 0, tile)
+    main.BackgroundTransparency = fade
+end
+
 MenuSection:AddDivider("Appearance");
-local background = MenuSection:AddList{text = "Background", flag = "UI Background", max = 4, value = "Floral", values = {"Floral", "Flowers", "Circles", "Hearts"}, callback = function(value)
-    if library.main then library.main.Image = backgrounds[value] end
-end}
-background:AddColor({flag = "UI Background Color", color = Color3.new(), trans = 1, calltrans = function(trans)
-    if library.main then library.main.ImageTransparency = 1 - trans end
-end})
-MenuSection:AddSlider{text = "Tile Size", flag = "UI Tile Size", min = 50, max = 500, value = 50, callback = function(value)
-    if library.main then library.main.TileSize = UDim2.new(0, value, 0, value) end
-end}
-MenuSection:AddSlider{text = "UI Transparency", flag = "UI Transparency", min = 0, max = 1, float = 0.05, value = 0, callback = function(value)
-    if library.main then library.main.BackgroundTransparency = value end
-end}
+MenuSection:AddList{text = "Background", flag = "UI Background", max = 4, value = "Floral", values = {"Floral", "Flowers", "Circles", "Hearts"}, callback = applyBackground}
+
+-- the pattern is a tiled image, so it tints through ImageColor3. nothing in the library
+-- writes that for you, the color option only paints its own swatch.
+MenuSection:AddColor{text = "Background Color", flag = "UI Background Color", color = Color3.fromRGB(255, 255, 255), trans = 1,
+    callback = applyBackground,
+    calltrans = applyBackground
+}
+
+MenuSection:AddSlider{text = "Tile Size", flag = "UI Tile Size", min = 1, max = 500, value = 50, callback = applyBackground}
+MenuSection:AddSlider{text = "UI Transparency", flag = "UI Transparency", min = 0, max = 1, float = 0.05, value = 0, callback = applyBackground}
 
 ConfigSection:AddDivider("Files");
 ConfigSection:AddBox{text = "Config Name", flag = "Config Name"};
@@ -270,4 +286,5 @@ end}
 
 -- [Init] -----------------------------------------------------------------------------------------------------
 library:Init()
+applyBackground() -- main exists now, push the saved background onto it
 library:selectTab(library.tabs[1])
