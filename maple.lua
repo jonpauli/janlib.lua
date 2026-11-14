@@ -1,11 +1,36 @@
--- Maple menu: Combat / Visuals / Rage / Misc / Settings
--- expects Jans Library to already be in getgenv().library, load it on the line above:
---   loadstring(game:HttpGet("https://raw.githubusercontent.com/jonpauli/janlib.lua/main/janlib.lua"))()
+-- Maple - Jans Library menu
+-- fetches the library, then declares Combat / Visuals / Rage / Misc / Settings and inits.
+-- tabs and toggles live here; the library source is never pasted into this file.
 --
--- UI is live immediately; combat/rage controls only publish flags.
--- your cheat loop reads them, e.g.:
---   if library.flags["Aimbot Enabled"] then local fov = library.flags["Aimbot FOV"] ... end
--- flags are kept in sync by the library, including when a config is loaded.
+-- run:
+--   loadstring(game:HttpGet("https://raw.githubusercontent.com/jonpauli/janlib.lua/main/maple.lua"))()
+-- or paste the whole file into the executor and execute.
+
+-- [library] ---------------------------------------------------------------------------------------------------
+if getgenv().library then pcall(function() getgenv().library:Unload() end) end
+
+local LIB_URLS = {
+    "https://raw.githubusercontent.com/jonpauli/janlib.lua/main/janlib.lua",
+    "https://files.catbox.moe/tlzk1o.lua",
+}
+
+local librarySource
+for _, url in ipairs(LIB_URLS) do
+    local ok, body = pcall(function() return game:HttpGet(url) end)
+    -- anything under 50 KB is the old truncated object or a stale CDN cache hit
+    if ok and type(body) == "string" and #body > 50000 then
+        librarySource = body
+        break
+    end
+end
+assert(librarySource, "[maple] could not fetch Jans Library from github or the mirror")
+
+local libraryChunk, libraryError = loadstring(librarySource)
+assert(libraryChunk, "[maple] library syntax error: " .. tostring(libraryError))
+libraryChunk()
+
+local library = getgenv().library
+assert(library, "[maple] library loaded but getgenv().library is nil")
 
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
@@ -14,7 +39,6 @@ local TeleportService = game:GetService("TeleportService")
 local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
-local library = getgenv().library
 
 library.title = "Maple"
 library.foldername = "maple_cnfgs"
@@ -27,7 +51,7 @@ local CombatCol2 = CombatTab:AddColumn()
 local Aim = CombatCol1:AddSection("Aim Assist")
 Aim:AddDivider("Main");
 Aim:AddToggle{text = "Enabled", flag = "Aimbot Enabled"}:AddBind({flag = "Aimbot Bind", key = "E", mode = "hold"});
-Aim:AddSlider{text = "FOV", flag = "Aimbot FOV", min = 0, max = 360, value = 120, suffix = "°"}
+Aim:AddSlider{text = "FOV", flag = "Aimbot FOV", min = 0, max = 360, value = 120, suffix = "├é┬░"}
 Aim:AddSlider{text = "Smoothing", flag = "Aimbot Smoothing", min = 1, max = 30, value = 8}
 Aim:AddSlider{text = "Prediction", flag = "Aimbot Prediction", min = 0, max = 2, float = 0.01, value = 0}
 Aim:AddList{text = "Hitbox", flag = "Aimbot Hitbox", value = "Head", values = {"Head", "Torso", "HumanoidRootPart"}};
@@ -104,7 +128,7 @@ local RageCol = RageTab:AddColumn()
 local RageAim = RageCol:AddSection("Aim")
 RageAim:AddDivider("Main");
 RageAim:AddToggle{text = "Enabled", flag = "Rage Aim Enabled"}:AddBind({flag = "Rage Aim Bind", key = "R", mode = "hold"});
-RageAim:AddSlider{text = "FOV", flag = "Rage Aim FOV", min = 0, max = 360, value = 180, suffix = "°"}
+RageAim:AddSlider{text = "FOV", flag = "Rage Aim FOV", min = 0, max = 360, value = 180, suffix = "├é┬░"}
 RageAim:AddSlider{text = "Smoothing", flag = "Rage Aim Smoothing", min = 0, max = 10, float = 0.1, value = 0}
 RageAim:AddList{text = "Priority", flag = "Rage Aim Priority", value = "Distance", values = {"Distance", "Health", "FOV"}};
 RageAim:AddDivider("Behaviour");
