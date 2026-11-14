@@ -84,7 +84,6 @@ Esp:AddToggle{text = "Names", flag = "ESP Names"}
 Esp:AddToggle{text = "Distance", flag = "ESP Distance"}
 Esp:AddToggle{text = "Health", flag = "ESP Health"}
 Esp:AddToggle{text = "Tracers", flag = "ESP Tracers"}:AddColor({flag = "Tracer Color", color = Color3.fromRGB(255, 255, 255)});
-Esp:AddSlider{text = "Refresh", flag = "ESP Refresh", min = 0.05, max = 1, float = 0.05, value = 0.1, suffix = "s"}
 
 local EspChecks = VisualsCol1:AddSection("ESP Checks")
 EspChecks:AddDivider("Main");
@@ -229,7 +228,7 @@ local function applyBackground()
     local fade = library.flags["UI Transparency"] or 0
     local tile = library.flags["UI Tile Size"] or 50
     main.Image = backgrounds[library.flags["UI Background"] or "Floral"]
-    main.ImageColor3 = library.flags["UI Background Color"] or Color3.new(1, 1, 1)
+    main.ImageColor3 = library.flags["UI Background Color"] or Color3.fromRGB(40, 40, 40)
     main.ImageTransparency = math.clamp(1 - opacity + fade, 0, 1)
     main.TileSize = UDim2.new(0, tile, 0, tile)
     main.BackgroundTransparency = fade
@@ -240,7 +239,7 @@ MenuSection:AddList{text = "Background", flag = "UI Background", max = 4, value 
 
 -- the pattern is a tiled image, so it tints through ImageColor3. nothing in the library
 -- writes that for you, the color option only paints its own swatch.
-MenuSection:AddColor{text = "Background Color", flag = "UI Background Color", color = Color3.fromRGB(255, 255, 255), trans = 1,
+MenuSection:AddColor{text = "Background Color", flag = "UI Background Color", color = Color3.fromRGB(40, 40, 40), trans = 1,
     callback = applyBackground,
     calltrans = applyBackground
 }
@@ -728,7 +727,7 @@ local function onRender(delta)
     end
 
     espElapsed = espElapsed + delta
-    if espElapsed >= (library.flags["ESP Refresh"] or 0.1) then
+    if espElapsed >= 0.1 then
         espElapsed = 0
         updateEsp()
     end
