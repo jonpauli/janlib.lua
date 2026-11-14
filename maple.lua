@@ -772,13 +772,14 @@ local function updateEsp()
                         -- tracer
                         local st, tracer = slot(entry, "tracer")
                         if tracer then
+                            local toX, toY = centerX, top + height * 0.5
                             put(st, tracer, "Visible", tracersOn)
                             put(st, tracer, "Color", tracerC)
                             put(st, tracer, "Thickness", tracerThickness)
-                            if st.fx ~= fromX or st.fy ~= fromY or st.tx ~= centerX or st.ty ~= top then
+                            if st.fx ~= fromX or st.fy ~= fromY or st.tx ~= toX or st.ty ~= toY then
                                 tracer.From = Vector2.new(fromX, fromY)
-                                tracer.To = Vector2.new(centerX, top)
-                                st.fx, st.fy, st.tx, st.ty = fromX, fromY, centerX, top
+                                tracer.To = Vector2.new(toX, toY)
+                                st.fx, st.fy, st.tx, st.ty = fromX, fromY, toX, toY
                             end
                         end
                     end
