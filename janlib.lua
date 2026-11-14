@@ -2606,15 +2606,19 @@ function library:Init()
     spawn(function()
         while library do
             wait(1)
-            local Configs = self:GetConfigs()
-            for _, config in next, Configs do
-                if not table.find(self.options["Config List"].values, config) then
-                    self.options["Config List"]:AddValue(config)
+            -- a script that doesn't build a "Config List" option shouldn't spew errors every second
+            local cfgList = self.options["Config List"]
+            if cfgList then
+                local Configs = self:GetConfigs()
+                for _, config in next, Configs do
+                    if not table.find(cfgList.values, config) then
+                        cfgList:AddValue(config)
+                    end
                 end
-            end
-            for _, config in next, self.options["Config List"].values do
-                if not table.find(Configs, config) then
-                    self.options["Config List"]:RemoveValue(config)
+                for _, config in next, cfgList.values do
+                    if not table.find(Configs, config) then
+                        cfgList:RemoveValue(config)
+                    end
                 end
             end
         end
