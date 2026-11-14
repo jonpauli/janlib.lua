@@ -554,12 +554,13 @@ local function updateEsp()
             if head and root and teamAllowed(plr, library.flags["ESP Team Check"]) then
                 local distance = (root.Position - origin).Magnitude
                 if distance <= maxDistance then
-                    -- screen space, not viewport space: Drawing sits on the window, so a viewport
-                    -- box would trail the character by the topbar inset
-                    local headPoint = camera:WorldToScreenPoint(head.Position + Vector3.new(0, 0.6, 0))
-                    local footPoint = camera:WorldToScreenPoint(root.Position - Vector3.new(0, 2.9, 0))
+                    -- Drawing coordinates are viewport coordinates. WorldToScreenPoint adds the
+                    -- topbar inset on top of that and pushes the whole box off the character.
+                    local headPoint, headOnScreen = camera:WorldToViewportPoint(head.Position + Vector3.new(0, head.Size.Y * 0.5, 0))
+                    local legDrop = humanoid.RigType == Enum.HumanoidRigType.R6 and 3 or (humanoid.HipHeight + 0.4)
+                    local footPoint = camera:WorldToViewportPoint(root.Position - Vector3.new(0, legDrop, 0))
 
-                    if headPoint.Z > 0 and footPoint.Z > 0 then
+                    if headPoint.Z > 0 and footPoint.Z > 0 and headOnScreen then
                         shown = true
                         local entry = espEntry(plr)
                         entry.state.hidden = false
