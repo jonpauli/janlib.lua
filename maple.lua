@@ -1,6 +1,6 @@
 -- Maple - paste this whole file into the executor and hit Execute.
 -- built for Arsenal: camera aim, silent aim on the Mouse object, trigger bot, ESP, recoil control.
--- binds: E = aim assist (hold), Q = trigger bot (hold), R = rage (hold), End = menu
+-- binds: X = aim assist (hold), V = silent aim (hold), C = trigger bot (hold), Z = rage (hold), End = menu
 
 -- [library] ---------------------------------------------------------------------------------------------------
 if getgenv().library then pcall(function() getgenv().library:Unload() end) end
@@ -37,8 +37,9 @@ local CombatCol2 = CombatTab:AddColumn()
 
 local Aim = CombatCol1:AddSection("Aim Assist")
 Aim:AddDivider("Main");
-Aim:AddToggle{text = "Enabled", flag = "Aimbot Enabled"}:AddBind({flag = "Aimbot Bind", key = "E", mode = "hold"});
-Aim:AddSlider{text = "FOV", flag = "Aimbot FOV", min = 0, max = 360, value = 120, suffix = " deg"}
+local aimToggle = Aim:AddToggle{text = "Enabled", flag = "Aimbot Enabled"}
+local aimBind = aimToggle:AddBind({flag = "Aimbot Bind", key = "X", mode = "hold"})
+Aim:AddSlider{text = "FOV", flag = "Aimbot FOV", min = 0, max = 360, value = 120, suffix = " px"}
 Aim:AddSlider{text = "Smoothing", flag = "Aimbot Smoothing", min = 1, max = 30, value = 8}
 Aim:AddSlider{text = "Prediction", flag = "Aimbot Prediction", min = 0, max = 2, float = 0.01, value = 0}
 Aim:AddList{text = "Hitbox", flag = "Aimbot Hitbox", value = "Head", values = {"Head", "Torso", "HumanoidRootPart"}};
@@ -48,7 +49,9 @@ Aim:AddToggle{text = "Wall Check", flag = "Aimbot Wall Check"}
 
 local Silent = CombatCol1:AddSection("Silent Aim")
 Silent:AddDivider("Main");
-Silent:AddToggle{text = "Enabled", flag = "Silent Aim Enabled"}
+local silentToggle = Silent:AddToggle{text = "Enabled", flag = "Silent Aim Enabled"}
+local silentBind = silentToggle:AddBind({flag = "Silent Aim Bind", key = "V", mode = "hold"})
+Silent:AddSlider{text = "FOV", flag = "Silent Aim FOV", min = 0, max = 360, value = 120, suffix = " px"}
 Silent:AddSlider{text = "Hit Chance", flag = "Silent Aim Chance", min = 0, max = 100, value = 100, suffix = "%"}
 Silent:AddList{text = "Mode", flag = "Silent Aim Mode", value = "On Shoot", values = {"Always", "On Shoot"}};
 Silent:AddDivider("Checks");
@@ -56,9 +59,10 @@ Silent:AddToggle{text = "Wall Check", flag = "Silent Aim Wall Check"}
 
 local Trigger = CombatCol2:AddSection("Trigger Bot")
 Trigger:AddDivider("Main");
-Trigger:AddToggle{text = "Enabled", flag = "Trigger Enabled"}:AddBind({flag = "Trigger Bind", key = "Q", mode = "hold"});
+local triggerToggle = Trigger:AddToggle{text = "Enabled", flag = "Trigger Enabled"}
+local triggerBind = triggerToggle:AddBind({flag = "Trigger Bind", key = "C", mode = "hold"})
 Trigger:AddSlider{text = "Delay", flag = "Trigger Delay", min = 0, max = 500, value = 0, suffix = " ms"}
-Trigger:AddSlider{text = "FOV", flag = "Trigger FOV", min = 0, max = 100, value = 20}
+Trigger:AddSlider{text = "FOV", flag = "Trigger FOV", min = 0, max = 100, value = 20, suffix = " px"}
 Trigger:AddDivider("Checks");
 Trigger:AddToggle{text = "Team Check", flag = "Trigger Team Check"}
 
@@ -78,18 +82,63 @@ local VisualsCol2 = VisualsTab:AddColumn()
 
 local Esp = VisualsCol1:AddSection("Player ESP")
 Esp:AddDivider("Main");
-Esp:AddToggle{text = "Enabled", flag = "ESP Enabled"}:AddColor({flag = "ESP Color", color = Color3.fromRGB(255, 255, 255)});
-Esp:AddToggle{text = "Boxes", flag = "ESP Boxes"}
-Esp:AddToggle{text = "Names", flag = "ESP Names"}
-Esp:AddToggle{text = "Distance", flag = "ESP Distance"}
-Esp:AddToggle{text = "Health", flag = "ESP Health"}
-Esp:AddToggle{text = "Tracers", flag = "ESP Tracers"}:AddColor({flag = "Tracer Color", color = Color3.fromRGB(255, 255, 255)});
+Esp:AddToggle{text = "Enabled", flag = "ESP Enabled"};
+-- off = every element uses its own colour below. on = one colour for box, name, distance and
+-- tracer, which is what you want when you just cba setting four pickers.
+local espSingle = Esp:AddToggle{text = "Single Colour", flag = "ESP Single Color"}
+espSingle:AddColor({flag = "ESP Color", color = Color3.fromRGB(255, 255, 255)})
+Esp:AddDivider("Elements");
+-- one colour per element, plus a style list where the element has a shape choice. the colour picker
+-- carries a transparency bar (the "trans" field) so the fill and the outline are both dialled here.
+local espBoxes = Esp:AddToggle{text = "Boxes", flag = "ESP Boxes"}
+espBoxes:AddColor({flag = "ESP Box Color", color = Color3.fromRGB(255, 255, 255), trans = 0.4})
+espBoxes:AddList{text = "Box Style", flag = "ESP Box Style", value = "Outline", values = {"Outline", "Filled", "Both"}}
+
+local espNames = Esp:AddToggle{text = "Names", flag = "ESP Names"}
+espNames:AddColor({flag = "ESP Name Color", color = Color3.fromRGB(255, 255, 255)})
+espNames:AddList{text = "Name Mode", flag = "ESP Name Mode", value = "Display", values = {"Display", "Username"}}
+
+local espDistance = Esp:AddToggle{text = "Distance", flag = "ESP Distance"}
+espDistance:AddColor({flag = "ESP Distance Color", color = Color3.fromRGB(200, 200, 200)})
+espDistance:AddList{text = "Distance Unit", flag = "ESP Distance Unit", value = "Studs", values = {"Studs", "Meters"}}
+
+local espHealth = Esp:AddToggle{text = "Health", flag = "ESP Health"}
+espHealth:AddColor({flag = "ESP Health Color", color = Color3.fromRGB(0, 255, 120)})
+espHealth:AddList{text = "Health Style", flag = "ESP Health Style", value = "Bar", values = {"Bar", "Text"}}
+
+local espTracers = Esp:AddToggle{text = "Tracers", flag = "ESP Tracers"}
+espTracers:AddColor({flag = "ESP Tracer Color", color = Color3.fromRGB(255, 255, 255)})
+espTracers:AddList{text = "Tracer Origin", flag = "ESP Tracer Origin", value = "Bottom", values = {"Bottom", "Center", "Top"}}
+
+local EspStyle = VisualsCol1:AddSection("ESP Style")
+EspStyle:AddDivider("Text");
+EspStyle:AddSlider{text = "Text Size", flag = "ESP Text Size", min = 8, max = 24, value = 14}
+EspStyle:AddList{text = "Font", flag = "ESP Font", value = "Plex", values = {"UI", "System", "Plex", "Code"}}
+EspStyle:AddToggle{text = "Text Outline", flag = "ESP Text Outline", state = true}
+EspStyle:AddDivider("Shapes");
+EspStyle:AddSlider{text = "Box Thickness", flag = "ESP Box Thickness", min = 1, max = 4, value = 1}
+EspStyle:AddSlider{text = "Tracer Thickness", flag = "ESP Tracer Thickness", min = 1, max = 4, value = 1}
+EspStyle:AddSlider{text = "Health Bar Width", flag = "ESP Health Width", min = 1, max = 8, value = 3}
 
 local EspChecks = VisualsCol1:AddSection("ESP Checks")
 EspChecks:AddDivider("Main");
 EspChecks:AddToggle{text = "Team Check", flag = "ESP Team Check"}
-EspChecks:AddToggle{text = "Use Team Color", flag = "ESP Team Color"}:AddColor({flag = "ESP Team Accent", color = Color3.fromRGB(0, 170, 255)});
+EspChecks:AddToggle{text = "Use Team Color", flag = "ESP Team Color"}
 EspChecks:AddSlider{text = "Max Distance", flag = "ESP Max Distance", min = 100, max = 5000, value = 2000, suffix = " st"}
+
+-- [FOV circles] ------------------------------------------------------------------------------------------------
+-- the aim FOV sliders are pixel radii, not degrees: findTarget compares screen distance from the
+-- crosshair against them. the circles draw at exactly that radius, so what you see is what the
+-- aimbot actually sees.
+local Fov = VisualsCol2:AddSection("FOV Circles")
+Fov:AddDivider("Draw");
+Fov:AddToggle{text = "Aimbot", flag = "FOV Aimbot Draw"}:AddColor({flag = "FOV Aimbot Color", color = Color3.fromRGB(0, 200, 255)});
+Fov:AddToggle{text = "Silent", flag = "FOV Silent Draw"}:AddColor({flag = "FOV Silent Color", color = Color3.fromRGB(255, 170, 0)});
+Fov:AddToggle{text = "Trigger", flag = "FOV Trigger Draw"}:AddColor({flag = "FOV Trigger Color", color = Color3.fromRGB(0, 255, 120)});
+Fov:AddToggle{text = "Rage", flag = "FOV Rage Draw"}:AddColor({flag = "FOV Rage Color", color = Color3.fromRGB(255, 60, 60)});
+Fov:AddDivider("Shape");
+Fov:AddSlider{text = "Thickness", flag = "FOV Thickness", min = 1, max = 5, value = 1}
+Fov:AddSlider{text = "Sides", flag = "FOV Sides", min = 3, max = 64, value = 64}
 
 local Env = VisualsCol2:AddSection("Environment")
 Env:AddDivider("Lighting");
@@ -111,33 +160,25 @@ Env:AddToggle{text = "Third Person", flag = "Third Person", callback = function(
     end
 end}
 
-library:AddConnection(RunService.RenderStepped, function()
-    local camera = workspace.CurrentCamera
-    if camera and library.flags["FOV Enabled"] then
-        camera.FieldOfView = library.flags["FOV"]
-    end
-end)
-
 -- [Rage] -----------------------------------------------------------------------------------------------------
 local RageTab = library:AddTab("Rage")
 local RageCol = RageTab:AddColumn()
 
 local RageAim = RageCol:AddSection("Aim")
 RageAim:AddDivider("Main");
-RageAim:AddToggle{text = "Enabled", flag = "Rage Aim Enabled"}:AddBind({flag = "Rage Aim Bind", key = "R", mode = "hold"});
-RageAim:AddSlider{text = "FOV", flag = "Rage Aim FOV", min = 0, max = 360, value = 180, suffix = " deg"}
+local rageToggle = RageAim:AddToggle{text = "Enabled", flag = "Rage Aim Enabled"}
+local rageBind = rageToggle:AddBind({flag = "Rage Aim Bind", key = "Z", mode = "hold"})
+RageAim:AddSlider{text = "FOV", flag = "Rage Aim FOV", min = 0, max = 360, value = 180, suffix = " px"}
 RageAim:AddSlider{text = "Smoothing", flag = "Rage Aim Smoothing", min = 0, max = 10, float = 0.1, value = 0}
 RageAim:AddList{text = "Priority", flag = "Rage Aim Priority", value = "Distance", values = {"Distance", "Health", "FOV"}};
 RageAim:AddDivider("Behaviour");
 RageAim:AddToggle{text = "Auto Fire", flag = "Rage Auto Fire"}
 RageAim:AddToggle{text = "Ignore Walls", flag = "Rage Ignore Walls"}
 
-local RageFov = RageCol:AddSection("FOV Circle")
-RageFov:AddDivider("Draw");
--- drawing the circle itself is a render step in your cheat loop, this only publishes the settings
-RageFov:AddToggle{text = "Draw", flag = "Rage FOV Draw"}:AddColor({flag = "Rage FOV Color", color = Color3.fromRGB(255, 60, 60)});
-RageFov:AddSlider{text = "Thickness", flag = "Rage FOV Thickness", min = 1, max = 5, value = 1}
-RageFov:AddSlider{text = "Sides", flag = "Rage FOV Sides", min = 3, max = 64, value = 64}
+local RageTarget = RageCol:AddSection("Target")
+RageTarget:AddDivider("Misc");
+RageTarget:AddList{text = "Hitbox", flag = "Rage Aim Hitbox", value = "Head", values = {"Head", "Torso", "HumanoidRootPart"}};
+RageTarget:AddToggle{text = "Team Check", flag = "Rage Aim Team Check"}
 
 -- [Misc] -----------------------------------------------------------------------------------------------------
 local MiscTab = library:AddTab("Misc")
@@ -318,6 +359,7 @@ local mouseWasDown = false
 local chanceRoll = 100
 local lastTrigger = 0
 local lastRageFire = 0
+local lastShot = 0
 local envElapsed = 0
 local warnedDrawing = false
 local fovApplied = false
@@ -414,6 +456,7 @@ local function aimAt(position, smoothness)
 end
 
 local function click()
+    lastShot = os.clock()
     if mouse1click then
         pcall(mouse1click)
     elseif mouse1press then
@@ -436,20 +479,25 @@ local function stabilise(scale)
 end
 
 -- [esp] --------------------------------------------------------------------------------------------------------
+-- every object is created once per player and then only written to when a value actually changes. a
+-- standing player costs zero Drawing writes per frame, a moving one costs position/size only.
+local ESP_OBJECTS = { "box", "boxFill", "name", "distance", "health", "healthBg", "healthBar", "tracer" }
+
+-- Drawing.Text.Font: 0 UI, 1 System, 2 Plex, 3 Monospace
+local ESP_FONT = { UI = 0, System = 1, Plex = 2, Code = 3 }
+
 local function newDrawing(class)
     if not drawingApi then return nil end
     local ok, object = pcall(drawingApi.new, class)
     return ok and object or nil
 end
 
-local espObjects = { "box", "name", "distance", "health", "tracer" }
-
 local function hideEntry(entry)
     local s = entry.state
     if s.hidden then return end
     for key in pairs(s) do s[key] = nil end
     s.hidden = true
-    for _, key in ipairs(espObjects) do
+    for _, key in ipairs(ESP_OBJECTS) do
         local object = entry[key]
         if object then object.Visible = false end
     end
@@ -461,26 +509,27 @@ local function espEntry(plr)
 
     entry = {
         box = newDrawing("Square"),
+        boxFill = newDrawing("Square"),
         name = newDrawing("Text"),
         distance = newDrawing("Text"),
         health = newDrawing("Text"),
+        healthBg = newDrawing("Square"),
+        healthBar = newDrawing("Square"),
         tracer = newDrawing("Line"),
         state = {},
     }
-    for _, text in ipairs({entry.name, entry.distance, entry.health}) do
+    if entry.box then entry.box.Filled = false end
+    if entry.boxFill then entry.boxFill.Filled = true end
+    for _, key in ipairs({ "name", "distance", "health" }) do
+        local text = entry[key]
         if text then
-            text.Size = 14
-            text.Font = 2
             text.Center = true
-            text.Outline = true
+            text.OutlineColor = Color3.new(0, 0, 0)
         end
     end
-    if entry.box then
-        entry.box.Thickness = 1
-        entry.box.Filled = false
-    end
-    if entry.tracer then
-        entry.tracer.Thickness = 1
+    if entry.healthBg then
+        entry.healthBg.Color = Color3.new(0, 0, 0)
+        entry.healthBg.Transparency = 0.35
     end
     hideEntry(entry)
     drawings[plr] = entry
@@ -489,30 +538,27 @@ end
 
 local espActive = false
 
-local function drawBox(entry, color, left, top, width, height, visible)
-    local s = entry.state
-    local box = entry.box
-    if not box then return end
-    if s.boxVisible ~= visible then box.Visible = visible; s.boxVisible = visible end
-    if s.boxColor ~= color then box.Color = color; s.boxColor = color end
-    if s.boxLeft ~= left or s.boxTop ~= top or s.boxWidth ~= width or s.boxHeight ~= height then
-        box.Position = Vector2.new(left, top)
-        box.Size = Vector2.new(width, height)
-        s.boxLeft, s.boxTop, s.boxWidth, s.boxHeight = left, top, width, height
+-- per object cache: only write a property when the value it should hold changed
+local function slot(entry, key)
+    local s = entry.state[key]
+    if not s then
+        s = {}
+        entry.state[key] = s
+    end
+    return s, entry[key]
+end
+
+local function put(s, object, prop, value)
+    if s[prop] ~= value then
+        s[prop] = value
+        object[prop] = value
     end
 end
 
-local function drawText(entry, object, key, color, x, y, text, visible)
-    local s = entry.state
-    if not object then return end
-    local vk, ck, xk, yk, tk = key .. "Visible", key .. "Color", key .. "X", key .. "Y", key .. "Text"
-    if s[vk] ~= visible then object.Visible = visible; s[vk] = visible end
-    if s[ck] ~= color then object.Color = color; s[ck] = color end
-    if s[xk] ~= x or s[yk] ~= y then
-        object.Position = Vector2.new(x, y)
-        s[xk], s[yk] = x, y
-    end
-    if s[tk] ~= text then object.Text = text; s[tk] = text end
+local function project(camera, position)
+    local point, onScreen = camera:WorldToViewportPoint(position)
+    if point.Z <= 0 then return nil end
+    return point, onScreen
 end
 
 local function updateEsp()
@@ -530,18 +576,52 @@ local function updateEsp()
         end
         return
     end
+    if not camera then return end
 
     espActive = true
     local accent = library.flags["ESP Color"] or Color3.new(1, 1, 1)
-    local tracerColor = library.flags["Tracer Color"] or Color3.new(1, 1, 1)
+    local boxColor = library.flags["ESP Box Color"] or accent
+    local boxTrans = library.flags["ESP Box Color Transparency"] or 0
+    local nameColor = library.flags["ESP Name Color"] or accent
+    local distColor = library.flags["ESP Distance Color"] or accent
+    local hpColor = library.flags["ESP Health Color"] or accent
+    local tracerColor = library.flags["ESP Tracer Color"] or accent
+
     local maxDistance = library.flags["ESP Max Distance"] or 2000
-    local origin = camera.CFrame.Position
-    local viewport = camera.ViewportSize
     local boxesOn = library.flags["ESP Boxes"] == true
     local namesOn = library.flags["ESP Names"] == true
     local distanceOn = library.flags["ESP Distance"] == true
     local healthOn = library.flags["ESP Health"] == true
     local tracersOn = library.flags["ESP Tracers"] == true
+    local teamCheck = library.flags["ESP Team Check"] == true
+    local teamColorOn = library.flags["ESP Team Color"] == true
+    local singleColor = library.flags["ESP Single Color"] == true
+
+    local boxStyle = library.flags["ESP Box Style"] or "Outline"
+    local healthStyle = library.flags["ESP Health Style"] or "Bar"
+    local unit = library.flags["ESP Distance Unit"] or "Studs"
+    local nameMode = library.flags["ESP Name Mode"] or "Display"
+    local tracerOrigin = library.flags["ESP Tracer Origin"] or "Bottom"
+
+    local textSize = library.flags["ESP Text Size"] or 14
+    local font = ESP_FONT[library.flags["ESP Font"] or "Plex"] or 2
+    local outline = library.flags["ESP Text Outline"] ~= false
+    local boxThickness = library.flags["ESP Box Thickness"] or 1
+    local tracerThickness = library.flags["ESP Tracer Thickness"] or 1
+    local hpWidth = library.flags["ESP Health Width"] or 3
+
+    local drawOutline = boxStyle ~= "Filled"
+    local drawFill = boxStyle ~= "Outline"
+
+    local origin = camera.CFrame.Position
+    local viewport = camera.ViewportSize
+    local fromX = viewport.X / 2
+    local fromY = viewport.Y
+    if tracerOrigin == "Center" then
+        fromY = viewport.Y / 2
+    elseif tracerOrigin == "Top" then
+        fromY = 0
+    end
 
     for _, plr in ipairs(Players:GetPlayers()) do
         local shown = false
@@ -551,43 +631,154 @@ local function updateEsp()
             local head = character and character:FindFirstChild("Head")
             local root = character and character:FindFirstChild("HumanoidRootPart")
 
-            if head and root and teamAllowed(plr, library.flags["ESP Team Check"]) then
+            if head and root and teamAllowed(plr, teamCheck) then
                 local distance = (root.Position - origin).Magnitude
                 if distance <= maxDistance then
-                    -- Drawing coordinates are viewport coordinates. WorldToScreenPoint adds the
-                    -- topbar inset on top of that and pushes the whole box off the character.
-                    local headPoint, headOnScreen = camera:WorldToViewportPoint(head.Position + Vector3.new(0, head.Size.Y * 0.5, 0))
+                    -- Drawing paints in viewport space. WorldToScreenPoint adds the topbar inset on
+                    -- top of that and pushes the whole box off the character.
+                    local headPoint, headOnScreen = project(camera, head.Position + Vector3.new(0, head.Size.Y * 0.5, 0))
                     local legDrop = humanoid.RigType == Enum.HumanoidRigType.R6 and 3 or (humanoid.HipHeight + 0.4)
-                    local footPoint = camera:WorldToViewportPoint(root.Position - Vector3.new(0, legDrop, 0))
+                    local footPoint = project(camera, root.Position - Vector3.new(0, legDrop, 0))
 
-                    if headPoint.Z > 0 and footPoint.Z > 0 and headOnScreen then
+                    if headPoint and footPoint and headOnScreen then
                         shown = true
                         local entry = espEntry(plr)
                         entry.state.hidden = false
+
                         local top = math.min(headPoint.Y, footPoint.Y)
-                        local height = math.abs(footPoint.Y - headPoint.Y)
+                        local height = math.max(math.abs(footPoint.Y - headPoint.Y), 6)
                         local width = math.max(height * 0.55, 8)
                         local centerX = (headPoint.X + footPoint.X) / 2
+                        local left = centerX - width / 2
                         local bottom = top + height
-                        local color = accent
 
-                        if library.flags["ESP Team Color"] and plr.Team then
-                            color = plr.Team.TeamColor.Color
+                        -- team colour wins, then single colour, then the per element pickers
+                        local boxC, nameC, distC, tracerC = boxColor, nameColor, distColor, tracerColor
+                        if singleColor then
+                            boxC, nameC, distC, tracerC = accent, accent, accent, accent
+                        end
+                        if teamColorOn and plr.Team then
+                            boxC = plr.Team.TeamColor.Color
+                            nameC, distC, tracerC = boxC, boxC, boxC
                         end
 
-                        drawBox(entry, color, centerX - width / 2, top, width, height, boxesOn)
-                        drawText(entry, entry.name, "name", color, centerX, top - 16, plr.Name, namesOn)
-                        drawText(entry, entry.distance, "distance", color, centerX, bottom + 1, ("%dm"):format(distance), distanceOn)
-                        drawText(entry, entry.health, "health", color, centerX, bottom + 16, ("%d hp"):format(humanoid.Health), healthOn)
+                        -- box: outline square, filled square, or both
+                        local sb, box = slot(entry, "box")
+                        if box then
+                            put(sb, box, "Visible", boxesOn and drawOutline)
+                            put(sb, box, "Color", boxC)
+                            put(sb, box, "Thickness", boxThickness)
+                            if sb.x ~= left or sb.y ~= top or sb.w ~= width or sb.h ~= height then
+                                box.Position = Vector2.new(left, top)
+                                box.Size = Vector2.new(width, height)
+                                sb.x, sb.y, sb.w, sb.h = left, top, width, height
+                            end
+                        end
 
-                        if entry.tracer then
-                            local s = entry.state
-                            if s.tracerVisible ~= tracersOn then entry.tracer.Visible = tracersOn; s.tracerVisible = tracersOn end
-                            if s.tracerColor ~= tracerColor then entry.tracer.Color = tracerColor; s.tracerColor = tracerColor end
-                            if s.tracerFromX ~= viewport.X / 2 or s.tracerFromY ~= viewport.Y or s.tracerToX ~= centerX or s.tracerToY ~= bottom then
-                                entry.tracer.From = Vector2.new(viewport.X / 2, viewport.Y)
-                                entry.tracer.To = Vector2.new(centerX, bottom)
-                                s.tracerFromX, s.tracerFromY, s.tracerToX, s.tracerToY = viewport.X / 2, viewport.Y, centerX, bottom
+                        local sf, fill = slot(entry, "boxFill")
+                        if fill then
+                            put(sf, fill, "Visible", boxesOn and drawFill)
+                            put(sf, fill, "Color", boxC)
+                            put(sf, fill, "Transparency", boxTrans)
+                            if sf.x ~= left or sf.y ~= top or sf.w ~= width or sf.h ~= height then
+                                fill.Position = Vector2.new(left, top)
+                                fill.Size = Vector2.new(width, height)
+                                sf.x, sf.y, sf.w, sf.h = left, top, width, height
+                            end
+                        end
+
+                        -- name
+                        local sn, nameText = slot(entry, "name")
+                        if nameText then
+                            put(sn, nameText, "Visible", namesOn)
+                            put(sn, nameText, "Color", nameC)
+                            put(sn, nameText, "Size", textSize)
+                            put(sn, nameText, "Font", font)
+                            put(sn, nameText, "Outline", outline)
+                            put(sn, nameText, "Text", nameMode == "Username" and plr.Name or plr.DisplayName)
+                            if sn.x ~= centerX or sn.y ~= top - textSize - 2 then
+                                nameText.Position = Vector2.new(centerX, top - textSize - 2)
+                                sn.x, sn.y = centerX, top - textSize - 2
+                            end
+                        end
+
+                        -- distance. the label is only formatted when the rounded value moves, so a
+                        -- standing player allocates nothing and writes nothing.
+                        local sd, distanceText = slot(entry, "distance")
+                        if distanceText then
+                            local rounded = math.floor((unit == "Meters" and distance * 0.28 or distance) + 0.5)
+                            if sd.k ~= rounded or sd.u ~= unit then
+                                sd.k, sd.u = rounded, unit
+                                distanceText.Text = (unit == "Meters") and (rounded .. "m") or (rounded .. "st")
+                            end
+                            put(sd, distanceText, "Visible", distanceOn)
+                            put(sd, distanceText, "Color", distC)
+                            put(sd, distanceText, "Size", textSize)
+                            put(sd, distanceText, "Font", font)
+                            put(sd, distanceText, "Outline", outline)
+                            if sd.x ~= centerX or sd.y ~= bottom + 1 then
+                                distanceText.Position = Vector2.new(centerX, bottom + 1)
+                                sd.x, sd.y = centerX, bottom + 1
+                            end
+                        end
+
+                        -- health: a bar to the left of the box, or a text row under it
+                        local ratio = math.clamp(humanoid.Health / math.max(humanoid.MaxHealth, 1), 0, 1)
+                        local hpTextOn = healthOn and healthStyle == "Text"
+                        local hpBarOn = healthOn and healthStyle == "Bar"
+
+                        local sh, healthText = slot(entry, "health")
+                        if healthText then
+                            local shownHp = math.ceil(humanoid.Health)
+                            if sh.k ~= shownHp then
+                                sh.k = shownHp
+                                healthText.Text = shownHp .. " hp"
+                            end
+                            put(sh, healthText, "Visible", hpTextOn)
+                            put(sh, healthText, "Color", hpColor)
+                            put(sh, healthText, "Size", textSize)
+                            put(sh, healthText, "Font", font)
+                            put(sh, healthText, "Outline", outline)
+                            if sh.x ~= centerX or sh.y ~= bottom + textSize + 2 then
+                                healthText.Position = Vector2.new(centerX, bottom + textSize + 2)
+                                sh.x, sh.y = centerX, bottom + textSize + 2
+                            end
+                        end
+
+                        local barX = left - boxThickness - 4 - hpWidth
+                        local barHeight = math.max(height * ratio, 0)
+                        local shb, hpBg = slot(entry, "healthBg")
+                        if hpBg then
+                            put(shb, hpBg, "Visible", hpBarOn)
+                            if shb.x ~= barX or shb.y ~= top or shb.h ~= height then
+                                hpBg.Position = Vector2.new(barX, top)
+                                hpBg.Size = Vector2.new(hpWidth, height)
+                                shb.x, shb.y, shb.h = barX, top, height
+                            end
+                        end
+
+                        local shr, hpBar = slot(entry, "healthBar")
+                        if hpBar then
+                            put(shr, hpBar, "Visible", hpBarOn and barHeight > 0)
+                            put(shr, hpBar, "Color", hpColor)
+                            if shr.x ~= barX or shr.w ~= hpWidth
+                                or shr.y ~= top + height - barHeight or shr.h ~= barHeight then
+                                hpBar.Position = Vector2.new(barX, top + height - barHeight)
+                                hpBar.Size = Vector2.new(hpWidth, barHeight)
+                                shr.x, shr.w, shr.y, shr.h = barX, hpWidth, top + height - barHeight, barHeight
+                            end
+                        end
+
+                        -- tracer
+                        local st, tracer = slot(entry, "tracer")
+                        if tracer then
+                            put(st, tracer, "Visible", tracersOn)
+                            put(st, tracer, "Color", tracerC)
+                            put(st, tracer, "Thickness", tracerThickness)
+                            if st.fx ~= fromX or st.fy ~= fromY or st.tx ~= centerX or st.ty ~= top then
+                                tracer.From = Vector2.new(fromX, fromY)
+                                tracer.To = Vector2.new(centerX, top)
+                                st.fx, st.fy, st.tx, st.ty = fromX, fromY, centerX, top
                             end
                         end
                     end
@@ -605,7 +796,7 @@ end
 Players.PlayerRemoving:Connect(function(plr)
     local entry = drawings[plr]
     if entry then
-        for _, key in ipairs(espObjects) do
+        for _, key in ipairs(ESP_OBJECTS) do
             local object = entry[key]
             if object then pcall(function() object:Remove() end) end
         end
@@ -613,11 +804,85 @@ Players.PlayerRemoving:Connect(function(plr)
     end
 end)
 
--- [fov circle] -------------------------------------------------------------------------------------------------
-local circle = newDrawing("Circle")
-if circle then
-    circle.Filled = false
-    circle.Visible = false
+-- [fov circles] ------------------------------------------------------------------------------------------------
+-- radius is the same pixel value findTarget compares against, so the circle is literally the aim area
+local function newCircle()
+    local c = newDrawing("Circle")
+    if c then
+        c.Filled = false
+        c.Visible = false
+    end
+    return c
+end
+
+local fovCircles = {
+    { circle = newCircle(), flag = "FOV Aimbot Draw", colorFlag = "FOV Aimbot Color", radiusFlag = "Aimbot FOV", fallbackRadius = 120, fallbackColor = Color3.fromRGB(0, 200, 255) },
+    { circle = newCircle(), flag = "FOV Silent Draw", colorFlag = "FOV Silent Color", radiusFlag = "Silent Aim FOV", fallbackRadius = 120, fallbackColor = Color3.fromRGB(255, 170, 0) },
+    { circle = newCircle(), flag = "FOV Trigger Draw", colorFlag = "FOV Trigger Color", radiusFlag = "Trigger FOV", fallbackRadius = 20, fallbackColor = Color3.fromRGB(0, 255, 120) },
+    { circle = newCircle(), flag = "FOV Rage Draw", colorFlag = "FOV Rage Color", radiusFlag = "Rage Aim FOV", fallbackRadius = 180, fallbackColor = Color3.fromRGB(255, 60, 60) },
+}
+
+local fovState = {}
+
+local function updateFov()
+    local center = crosshair()
+    local thickness = library.flags["FOV Thickness"] or 1
+    local sides = library.flags["FOV Sides"] or 64
+
+    for _, cfg in ipairs(fovCircles) do
+        local circle = cfg.circle
+        if circle then
+            local s = fovState[cfg]
+            if not s then
+                s = {}
+                fovState[cfg] = s
+            end
+
+            local radius = library.flags[cfg.radiusFlag] or cfg.fallbackRadius
+            local on = library.flags[cfg.flag] == true and radius > 0
+            if s.visible ~= on then
+                circle.Visible = on
+                s.visible = on
+            end
+
+            if on then
+                local color = library.flags[cfg.colorFlag] or cfg.fallbackColor
+                if s.pos ~= center then circle.Position = center; s.pos = center end
+                if s.radius ~= radius then circle.Radius = radius; s.radius = radius end
+                if s.color ~= color then circle.Color = color; s.color = color end
+                if s.thickness ~= thickness then circle.Thickness = thickness; s.thickness = thickness end
+                if s.sides ~= sides then circle.NumSides = sides; s.sides = sides end
+            end
+        end
+    end
+end
+
+-- [binds] ------------------------------------------------------------------------------------------------------
+-- the library sets the bind flag on key down and clears it on key up. if the window loses focus while
+-- the key is held the key-up never arrives and the flag sticks on forever, which looks exactly like
+-- "the bind is broken". check the real input state and heal the flag.
+local function bindHeld(bind)
+    if not bind then return false end
+    if library.flags[bind.flag] ~= true then return false end
+
+    local key = bind.key
+    if not key or key == "none" then return true end
+
+    if key:match("^Mouse") then
+        local input = Enum.UserInputType[key]
+        if input and not UserInputService:IsMouseButtonPressed(input) then
+            library.flags[bind.flag] = false
+            return false
+        end
+    else
+        local code = Enum.KeyCode[key]
+        if code and not UserInputService:IsKeyDown(code) then
+            library.flags[bind.flag] = false
+            return false
+        end
+    end
+
+    return true
 end
 
 -- [main loop] --------------------------------------------------------------------------------------------------
@@ -677,24 +942,30 @@ local function onRender(delta)
     local mouseDown = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
     if mouseDown and not mouseWasDown then
         chanceRoll = math.random() * 100
+        lastShot = os.clock()
     end
     mouseWasDown = mouseDown
 
-    local aimActive = library.flags["Aimbot Enabled"] or library.flags["Aimbot Bind"]
-    local rageActive = library.flags["Rage Aim Enabled"] or library.flags["Rage Aim Bind"]
+    local aimActive = library.flags["Aimbot Enabled"] == true or bindHeld(aimBind)
+    local rageActive = library.flags["Rage Aim Enabled"] == true or bindHeld(rageBind)
 
+    -- recoil recovery only runs for a short window after a shot, otherwise the camera would fight
+    -- the mouse on every frame where the mouse happened to move less than a pixel
     if not aimActive and not rageActive then
-        stabilise((library.flags["Recoil Scale"] or 0) / 100)
-        recoilBase = camera.CFrame
+        if os.clock() - lastShot < 0.35 then
+            stabilise((library.flags["Recoil Scale"] or 0) / 100)
+        else
+            recoilBase = camera.CFrame
+        end
     end
 
     if rageActive then
         local target = findTarget(
             library.flags["Rage Aim FOV"] or 180,
-            library.flags["Aimbot Hitbox"] or "Head",
+            library.flags["Rage Aim Hitbox"] or "Head",
             library.flags["Rage Aim Priority"] or "Distance",
             library.flags["Aim Max Distance"] or 1000,
-            library.flags["Aimbot Team Check"],
+            library.flags["Rage Aim Team Check"],
             not library.flags["Rage Ignore Walls"]
         )
         if target then
@@ -720,7 +991,7 @@ local function onRender(delta)
         end
     end
 
-    local triggerActive = library.flags["Trigger Enabled"] or library.flags["Trigger Bind"]
+    local triggerActive = library.flags["Trigger Enabled"] == true or bindHeld(triggerBind)
     if triggerActive and os.clock() - lastTrigger >= math.max((library.flags["Trigger Delay"] or 0) / 1000, 0.03) then
         local target = findTarget(
             library.flags["Trigger FOV"] or 20,
@@ -737,12 +1008,13 @@ local function onRender(delta)
     end
 
     silentTarget = nil
-    if library.flags["Silent Aim Enabled"] then
+    local silentActive = library.flags["Silent Aim Enabled"] == true or bindHeld(silentBind)
+    if silentActive then
         local mode = library.flags["Silent Aim Mode"] or "On Shoot"
         if mode == "Always" or mouseDown then
             if chanceRoll <= (library.flags["Silent Aim Chance"] or 100) then
                 local target = findTarget(
-                    math.max(library.flags["Aimbot FOV"] or 120, 40),
+                    library.flags["Silent Aim FOV"] or 120,
                     library.flags["Aimbot Hitbox"] or "Head",
                     "FOV",
                     library.flags["Aim Max Distance"] or 1000,
@@ -754,15 +1026,7 @@ local function onRender(delta)
         end
     end
 
-    if circle then
-        circle.Position = crosshair()
-        circle.Radius = library.flags["Rage Aim FOV"] or 180
-        circle.Thickness = library.flags["Rage FOV Thickness"] or 1
-        circle.NumSides = library.flags["Rage FOV Sides"] or 64
-        circle.Color = library.flags["Rage FOV Color"] or Color3.fromRGB(255, 60, 60)
-        circle.Visible = library.flags["Rage FOV Draw"] == true
-    end
-
+    updateFov()
     updateEsp() -- every frame, so boxes stay welded to the character instead of trailing
 end
 
@@ -797,11 +1061,13 @@ function library:Unload()
     pcall(function() RunService:UnbindFromRenderStep("maple") end)
     silentTarget = nil
     for _, entry in pairs(drawings) do
-        for _, key in ipairs(espObjects) do
+        for _, key in ipairs(ESP_OBJECTS) do
             local object = entry[key]
             if object then pcall(function() object:Remove() end) end
         end
     end
-    if circle then pcall(function() circle:Remove() end) end
+    for _, cfg in ipairs(fovCircles) do
+        if cfg.circle then pcall(function() cfg.circle:Remove() end) end
+    end
     return baseUnload(self)
 end
